@@ -15,6 +15,10 @@ class CommandHandler {
 			});
 		}
 	}
+	
+	meta() {
+		return { } ;
+	}
 
 	getCommands(commands) {
 		return;
