@@ -28,11 +28,11 @@ class TaskInstance {
 	}
 
 	getButtons () {
+		let result = new MessageActionRow();
  		if (this.task.replies !== undefined) {
 			const tasks = Object.keys(this.task.replies);
 
 			if (tasks.length > 0) {
-				let result = new MessageActionRow();
 			
 				for (let task of tasks) {
 					result.addComponents(
@@ -43,18 +43,16 @@ class TaskInstance {
 					);
 				}
 				
-				result.addComponents(
-					new MessageButton()
-						.setCustomId(CANCEL_BUTTON_ID)
-						.setLabel('Cancel')
-						.setStyle('DANGER')
-				);
-				
-				return [result];
 			}
 		}	
-
-		return undefined;
+		result.addComponents(
+			new MessageButton()
+				.setCustomId(CANCEL_BUTTON_ID)
+				.setLabel('Cancel')
+				.setStyle('DANGER')
+		);
+				
+		return [result];
 	}
 
 	getMessage(title, message) {
@@ -83,10 +81,12 @@ class TaskInstance {
 	}
 
 	handleReply(i) {
-		console.log(i);
-
 		if (i.customId == CANCEL_BUTTON_ID) {
-			i.reply({content: 'Action was Cancelled!'});
+			if (i.member.roles.cache.has(this.master.config.ids.masterrole)) {
+				i.reply({content: 'Action was cancelled by ' + i.member.displayName})
+			} else {
+				i.reply({content: '<@&'+this.master.config.ids.masterrole+'>! Action was cancelled by ' + i.member.displayName})
+			}
 			this.disableAllButtons(i.message);
 		} 
 		else if (i.customId in this.task.replies) {
@@ -110,7 +110,12 @@ class TaskInstance {
 
 	awaitMessageComponent(message) {
 		const filter = i => {
-			if (i.user.id === this.userID) return true;
+			if (i.user.id === this.userID) 
+				return true;
+
+			if ((i.customID == CANCEL_BUTTON_ID) && i.member.roles.cache.has(this.master.config.ids.masterrole))
+				return true;
+
 			i.reply({content: 'This interaction was not meant for you', ephemeral: true});
 		};
 		

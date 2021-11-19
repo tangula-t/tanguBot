@@ -133,7 +133,7 @@ class ChatMaster extends CommandHandler {
 		const masterCommand = await this.bot.discord.guilds.cache.get(this.config.ids.guild)?.commands.cache.find(command => command.name === 'master');
 		if (masterCommand) {
 			let permissions = [{
-				id: this.config.ids.master-role,
+				id: this.config.ids.masterrole,
 				type: 'ROLE',
 				permission: true
 			}]
@@ -154,11 +154,6 @@ class ChatMaster extends CommandHandler {
 	}
 
 	handleCommandSlave(interaction) {
-		if (interaction.member.user.id != this.config.ids.discord) {
-			interaction.reply({ content: 'Error processing command',  ephemeral: true });
-			return false;
-		}
-
 		let command = interaction.options.getSubcommand().toLowerCase();
 		switch (command) {
 			case 'wake':
@@ -175,11 +170,6 @@ class ChatMaster extends CommandHandler {
 	}
 	
 	handleCommandMaster(interaction) {
-		if (interaction.member.user.id != this.config.ids.discord) {
-			interaction.reply({ content: 'Error processing command',  ephemeral: true });
-			return false;
-		}
-
 		let command = interaction.options.getSubcommand().toLowerCase();
 		switch (command) {
 			case 'wake':
