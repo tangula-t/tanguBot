@@ -1,0 +1,66 @@
+{
+	"taskListName": [
+		{
+		  "task": "Do Something",
+		  "chance": 5
+		},
+		{	
+		  "task": "Do Something else [4] times.",
+		  "chance": 5
+		}
+	],
+	"taskListCalledOnTimeout": [
+		{ 
+			"task": "Do something (75%[25:100];25%[75:150]) times",
+			"chance": 1
+		}
+
+	],
+	"taskListCalledOnNo": [
+		{ 
+			"task": "Do something worse.",
+			"chance": 1
+		}
+
+	],
+	"YetAnotherTaskList": [
+		{ 
+		  "chance": 1500,
+		  "task": "Very high chance task. with a 6000ms timeout. Decreases merit by 5 if timing out",
+		  "timeout": {
+			  "time": 6000,
+		 	  "tasks": "taskListCalledOnTimeout",
+			  "status": { 
+				"merit": -5 
+			  }
+		  },
+		  "replies": {
+			"Button A": {
+				"status": { 
+					"merit": 5 
+				},
+				"reply": "Good boy, gain 5 merit"
+			},
+			"No": {
+				"status": {
+					"merit": -10
+				},
+				"tasks": "taskListCalledOnNo"
+			},
+			"I can not": {}
+		  }
+		},
+		{
+		  "chance": 8,
+		  "task": "Another task"
+		},
+		{
+		  "chance": {
+			"(merit<-20)": 100,
+			"merit<=0": 1,
+			"merit>0": 2
+		  },
+		  "task": "Another task with chances based on state"
+		}
+	]
+}

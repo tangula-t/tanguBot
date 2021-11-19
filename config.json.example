@@ -1,0 +1,11 @@
+{
+  "defaultTimeout": 600000,
+  "discord": {
+    "token": "Discord Bot Token",
+    "clientId": "Discord client ID"
+  },
+  "telegram": {
+    "token": "Telegram Token"
+  },
+  "prefix": "!"
+}

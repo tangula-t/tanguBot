@@ -1,0 +1,8 @@
+{
+  "state": {
+    "merit": 0,
+    "some_state": "someValue",
+    "some_other_sate": 1
+  },
+  "location": "unknown"
+}

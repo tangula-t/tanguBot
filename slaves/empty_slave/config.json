@@ -1,0 +1,9 @@
+{
+  "name": "EXAMPLE",
+  "ids": {
+    "guild": "Discord Guild ID",
+    "discord": "Discord Slave UserID",
+    "discordchannel": "Discord Slave Bot Interaction Channel",
+    "telegram": "Telegram UserID"
+  }
+}
