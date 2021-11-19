@@ -44,6 +44,7 @@ class TanguBot {
 
 	discordReadyHandler(e) {
 		console.log('Logged in as ' + this.discord.user.tag);
+		this.discord.user.setActivity('with my subs', { type: 'PLAYING' })
 		this.loadCommands('commands');
 		this.loadChatMasters('slaves');
 		this.registerCommands();
@@ -124,9 +125,10 @@ class TanguBot {
 			this.rest.put(
 				Routes.applicationGuildCommands(this.config.discord.clientId, guild.id),
 				{ body: guildCommands }
-			).then(() => { console.log ('Registered commands for guild: ' + guild.name + ". Registered: " + guildCommands.map(c => c.name))});
+			)
+			.then(() => { console.log ('Registered commands for guild: ' + guild.name + ". Registered: " + guildCommands.map(c => c.name)); })
+			.catch(e => { console.log(e); }	);
 		});
-		
 		this.commandHandlers.forEach(handler => handler.afterRegisterCommands());
 	}
 }

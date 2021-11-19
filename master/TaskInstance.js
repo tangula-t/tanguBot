@@ -110,7 +110,7 @@ class TaskInstance {
 
 	awaitMessageComponent(message) {
 		const filter = i => {
-			if (i.user.id === this.userID) 
+			if (i.user.id === this.master.config.ids.discord) 
 				return true;
 
 			if ((i.customID == CANCEL_BUTTON_ID) && i.member.roles.cache.has(this.master.config.ids.masterrole))
@@ -137,6 +137,7 @@ class TaskInstance {
 						const task = this.master.tasklists.getTask(this.task.timeout.tasks, this.master.slave.state);
 						const taskInstance = new TaskInstance(task, this.master);
 						taskInstance.sendTask(message.channel, "You are too late!", "Here is what will happen.");
+						this.master.messagePrivate('New Task!');
 					}
 				} else {
 	 				console.log(`No interactions were collected.`);

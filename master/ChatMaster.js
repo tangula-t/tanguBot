@@ -18,17 +18,20 @@ class ChatMaster extends CommandHandler {
 		this.slave = {};
 		this.config = {};
 		this.discord = {};
-		this.loadConfigJSON();
+		this.config = this.loadFile(configJSON);
 		if (this.config.name == 'EXAMPLE') { 
 			this.guilds = [0];
 			return;
 		}
+		
+		this.permissions = this.loadFile('permissions.json');
 		this.tasklists = new TaskLists(this.slavePath);
+
 		this.guilds = [ this.config.ids.guild ]; 
 
 		this.reload()
 			.then(()=>{
-				this.messagePrivate('Bot has started');
+		//		this.messagePrivate('Bot has started');
 				console.log('master loaded for ' + this.config.name);
 			});
 	}
@@ -40,18 +43,14 @@ class ChatMaster extends CommandHandler {
 			.then(()=>{console.log("Reloaded: " + this.config.name)});
 	}
 
-	loadConfigJSON() {
-		let data = fs.readFileSync(path.resolve(this.slavePath, configJSON));
-		this.config = JSON.parse(data);
-	}
+	loadFile(file) {
+		let data = fs.readFileSync(path.resolve(this.slavePath, file));
+		return JSON.parse(data);
 
-	loadSlaveJSON() {
-		let data = fs.readFileSync(path.resolve(this.slavePath, slaveJSON));
-		this.slave = JSON.parse(data);
 	}
 
 	async reloadSlave() {
-		this.loadSlaveJSON();
+		this.slave = this.loadFile(slaveJSON)
 
 		this.discord.channel = await this.bot.discord.channels.cache.get(this.config.ids.discordchannel);
 		if (!this.discord.channel) {
@@ -102,6 +101,35 @@ class ChatMaster extends CommandHandler {
 			console.log('Warning: Slave location: Unknown');
 		}
 	}
+
+	getPermissionsStringOption(option) {
+		option.setName('for')
+			.setDescription('What do you want permission for?')
+			.setRequired(true);
+			
+		for (let permission in this.permissions) {
+			option.addChoice(permission, permission);
+		}
+		return option;
+	}
+
+	handlePermission(interaction) {
+		const {options} = interaction;
+		let permissionFor = options.get('for').value;
+		if (permissionFor in this.permissions) {
+			let permission = this.permissions[permissionFor];
+			if (permission.status) {
+				this.applyStatus(permission.status);
+			}
+			const task = this.tasklists.getTask(permission.tasks, this.slave.state);
+			const taskInstance = new TaskInstance(task, this);
+			taskInstance.replyInteraction(interaction, 'You asked permission for: ' + permissionFor, 'This is my answer');
+		}
+		else {
+			interaction.reply({ content: 'No permission list found for: ' + permissionFor, ephemeral: true});
+		}
+
+	}
 	
 	getCommands(commands) {
 		commands.push(
@@ -114,6 +142,12 @@ class ChatMaster extends CommandHandler {
 			.addSubcommand(subcommand => subcommand
 				.setName('reload')
 				.setDescription('Reload (slave) configuration'))
+			.addSubcommand(subcommand => subcommand
+				.setName('permission')
+				.setDescription('Ask permission for something')
+				.addStringOption(option => this.getPermissionsStringOption(option))
+			)
+			.setDefaultPermission(false)
 			.toJSON()
 		);
 		
@@ -124,33 +158,42 @@ class ChatMaster extends CommandHandler {
 			.addSubcommand(subcommand => subcommand
 				.setName('reload')
 				.setDescription('Reload (slave) configuration'))
+			.addSubcommand(subcommand => subcommand
+				.setName('givetask')
+				.setDescription('Give '+this.config.name+' a task from a tasklist')
+				.addStringOption(option => option.setName('tasklist')
+							.setRequired(true)
+							.setDescription('name of the tasklist to select a task from'))
+			)
 			.setDefaultPermission(false)
 			.toJSON()
 		);
 	}
 
-	async afterRegisterCommands(commands) {
-		const masterCommand = await this.bot.discord.guilds.cache.get(this.config.ids.guild)?.commands.cache.find(command => command.name === 'master');
-		if (masterCommand) {
-			let permissions = [{
-				id: this.config.ids.masterrole,
-				type: 'ROLE',
-				permission: true
-			}]
-			await masterCommand.permissions.set({permissions});
-		}
-		
-		const slaveCommand = await this.bot.discord.guilds.cache.get(this.config.ids.guild)?.commands.cache.find(command => command.name === 'slave');
-		if (slaveCommand) {
-			let permissions = [{
-				id: this.config.ids.discord,
-				type: 'USER',
-				permission: true
-			}]
-			await slaveCommand.permissions.set({permissions});
-		}
+	async afterRegisterCommands() {
+		if (this.config.name == 'EXAMPLE') return; 
 
-		return;
+		const guild = await this.bot.discord.guilds.fetch(this.config.ids.guild);
+		const commands = await guild.commands.fetch();
+
+		commands.forEach(command => {
+			if (command.name == 'master') {
+				let permissions = [{
+					id: this.config.ids.masterrole,
+					type: 'ROLE',
+					permission: true
+				}]
+				command.permissions.set({permissions});
+				console.log('set permissions for master');
+			} else if (command.name == 'slave') {
+				let permissions = [{
+					id: this.config.ids.discord,
+					type: 'USER',
+					permission: true
+				}]
+				command.permissions.set({permissions});
+			}
+		});
 	}
 
 	handleCommandSlave(interaction) {
@@ -158,6 +201,9 @@ class ChatMaster extends CommandHandler {
 		switch (command) {
 			case 'wake':
 				this.handleWake(interaction);
+				break;
+			case 'permission':
+				this.handlePermission(interaction);
 				break;
 			case 'reload':
 				this.reload();
@@ -172,8 +218,8 @@ class ChatMaster extends CommandHandler {
 	handleCommandMaster(interaction) {
 		let command = interaction.options.getSubcommand().toLowerCase();
 		switch (command) {
-			case 'wake':
-				this.handleWake(interaction);
+			case 'givetask':
+				this.handleMasterGiveTask(interaction);
 				break;
 			case 'reload':
 				this.reload();
@@ -208,6 +254,16 @@ class ChatMaster extends CommandHandler {
 		const taskInstance = new TaskInstance(punishment, this);
 		taskInstance.replyInteraction(interaction, 'You woke up?', 'Here is what you will do:');
 	}
+
+	handleMasterGiveTask(interaction) {
+		const {options} = interaction;
+		let taskList = options.get('tasklist').value;
+		const task = this.tasklists.getTask(taskList, this.slave.state);
+		const taskInstance = new TaskInstance(task, this);
+		taskInstance.replyInteraction(interaction, interaction.member.displayName + ' requested a task for ' + this.config.name, ' ');
+		this.messagePrivate('New task from ' + interaction.member.displayName +'!');
+	}
+
 
 	messagePrivate(msg) {
 		if (this.discord.user) {
