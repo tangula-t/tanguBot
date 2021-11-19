@@ -131,6 +131,54 @@ class ChatMaster extends CommandHandler {
 
 	}
 	
+	handleMasterStatus(interaction) {
+		const {options} = interaction;
+
+		let command = interaction.options.getSubcommand().toLowerCase();
+
+		switch(command) {
+			case 'get': 
+				let r = new Discord.MessageEmbed()
+					.setTitle(this.config.name + ' status.')
+					.setDescription('All status fields listed below' );
+
+				for (let s in this.slave.state) {
+					r.addField(s, '' + this.slave.state[s]);
+
+				}
+				interaction.reply({ content: ' ', embeds: [r], ephemeral: true});
+				break;
+			case 'set': 
+				const id = options.get('id').value;
+				const value = options.get('value').value;
+
+				if (id in this.slave.state) {
+					const old = this.slave.state[id];
+					if (Number.isInteger(old)) {
+						try {
+							var newNumber = +value;
+						} catch(e) {
+							interaction.reply({content: 'Refusing to set a non-number value to a currently numeric value', emphemeral: true});
+							return;
+						}
+						if (!Number.isInteger(newNumber)) {
+							interaction.reply({content: 'Refusing to set a non-number value to a currently numeric value', emphemeral: true});
+							return;
+						} else {
+							this.slave.state[id] = newNumber;
+						}
+					} else {
+							this.slave.state[id] = parseInt(value);
+					}
+					this.saveSlave();
+					interaction.reply({content: '' + id + ' set to ' + value, ephemeral: true});
+				} else {
+					interaction.reply({content: 'Unknown state ID: ' + id, emphemeral: true});
+				}
+		}
+
+	}
+	
 	getCommands(commands) {
 		commands.push(
 			new SlashCommandBuilder()
@@ -158,6 +206,27 @@ class ChatMaster extends CommandHandler {
 			.addSubcommand(subcommand => subcommand
 				.setName('reload')
 				.setDescription('Reload (slave) configuration'))
+			.addSubcommandGroup(subcommand => subcommand
+				.setName('status')
+				.setDescription('manipulate status')
+				.addSubcommand(subcommand => subcommand
+					.setName('get')
+					.setDescription('get status'))
+				.addSubcommand(subcommand => subcommand
+					.setName('set')
+					.setDescription('set status')
+					.addStringOption(option => option
+						.setName('id')
+						.setDescription('What setting to change')
+						.setRequired(true))
+					.addStringOption(option => option
+						.setName('value')
+						.setDescription('New value for this setting')
+						.setRequired(true))
+				)
+
+
+			)
 			.addSubcommand(subcommand => subcommand
 				.setName('givetask')
 				.setDescription('Give '+this.config.name+' a task from a tasklist')
@@ -216,6 +285,13 @@ class ChatMaster extends CommandHandler {
 	}
 	
 	handleCommandMaster(interaction) {
+		let commandgroup = interaction.options.getSubcommandGroup().toLowerCase();
+		switch (commandgroup) {
+			case 'status': 
+				this.handleMasterStatus(interaction);
+				return true;
+				break;
+		}
 		let command = interaction.options.getSubcommand().toLowerCase();
 		switch (command) {
 			case 'givetask':

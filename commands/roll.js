@@ -1,5 +1,6 @@
 const Discord = require('discord.js');
 const Roll = require('roll');
+const path = require('path');
 const { SlashCommandBuilder } = require('@discordjs/builders');
 
 const { CommandHandler } = require(path.resolve(__dirname, '..', 'CommandHandler.js'));
