@@ -4,6 +4,7 @@
     "guild": "Discord Guild ID",
     "discord": "Discord Slave UserID",
     "discordchannel": "Discord Slave Bot Interaction Channel",
+    "master-role": "Discord Role ID of master role",
     "telegram": "Telegram UserID"
   }
 }

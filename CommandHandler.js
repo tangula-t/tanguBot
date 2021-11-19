@@ -19,6 +19,10 @@ class CommandHandler {
 	getCommands(commands) {
 		return;
 	}
+
+	async afterRegisterCommands(commands) {
+		return;
+	}
 	
 	handleCommand (interaction) {
 		return false;

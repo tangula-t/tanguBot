@@ -125,8 +125,9 @@ class TanguBot {
 				Routes.applicationGuildCommands(this.config.discord.clientId, guild.id),
 				{ body: guildCommands }
 			).then(() => { console.log ('Registered commands for guild: ' + guild.name + ". Registered: " + guildCommands.map(c => c.name))});
-
 		});
+		
+		this.commandHandlers.forEach(handler => handler.afterRegisterCommands());
 	}
 }
 

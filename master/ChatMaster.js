@@ -37,6 +37,7 @@ class ChatMaster extends CommandHandler {
 		await this.reloadSlave()
 			.then(()=>{this.reloadLocations()})
 			.then(()=>{this.tasklists.reload()})
+			.then(()=>{console.log("Reloaded: " + this.config.name)});
 	}
 
 	loadConfigJSON() {
@@ -61,7 +62,6 @@ class ChatMaster extends CommandHandler {
 		if (!this.discord.user) {
 			console.log('ERROR: User not found: ' + this.config.ids.discord);
 		}
-
 	}
 
 	async saveSlave() {
@@ -106,8 +106,8 @@ class ChatMaster extends CommandHandler {
 	getCommands(commands) {
 		commands.push(
 			new SlashCommandBuilder()
-			.setName ('master')
-			.setDescription('Masters commands')
+			.setName ('slave')
+			.setDescription('Masters commands for the slave')
 			.addSubcommand(subcommand => subcommand
 				.setName('wake')
 				.setDescription('Involuntary wake up'))
@@ -116,33 +116,99 @@ class ChatMaster extends CommandHandler {
 				.setDescription('Reload (slave) configuration'))
 			.toJSON()
 		);
+		
+		commands.push(
+			new SlashCommandBuilder()
+			.setName ('master')
+			.setDescription('Masters commands for the master')
+			.addSubcommand(subcommand => subcommand
+				.setName('reload')
+				.setDescription('Reload (slave) configuration'))
+			.setDefaultPermission(false)
+			.toJSON()
+		);
 	}
+
+	async afterRegisterCommands(commands) {
+		const masterCommand = await this.bot.discord.guilds.cache.get(this.config.ids.guild)?.commands.cache.find(command => command.name === 'master');
+		if (masterCommand) {
+			let permissions = [{
+				id: this.config.ids.master-role,
+				type: 'ROLE',
+				permission: true
+			}]
+			await masterCommand.permissions.set({permissions});
+		}
+		
+		const slaveCommand = await this.bot.discord.guilds.cache.get(this.config.ids.guild)?.commands.cache.find(command => command.name === 'slave');
+		if (slaveCommand) {
+			let permissions = [{
+				id: this.config.ids.discord,
+				type: 'USER',
+				permission: true
+			}]
+			await slaveCommand.permissions.set({permissions});
+		}
+
+		return;
+	}
+
+	handleCommandSlave(interaction) {
+		if (interaction.member.user.id != this.config.ids.discord) {
+			interaction.reply({ content: 'Error processing command',  ephemeral: true });
+			return false;
+		}
+
+		let command = interaction.options.getSubcommand().toLowerCase();
+		switch (command) {
+			case 'wake':
+				this.handleWake(interaction);
+				break;
+			case 'reload':
+				this.reload();
+				interaction.reply({ content: 'Done', ephemeral: true} );
+				break;
+			default:
+				interaction.reply({ content: 'Error processing command',  ephemeral: true });
+		}
+		return true;
+	}
+	
+	handleCommandMaster(interaction) {
+		if (interaction.member.user.id != this.config.ids.discord) {
+			interaction.reply({ content: 'Error processing command',  ephemeral: true });
+			return false;
+		}
+
+		let command = interaction.options.getSubcommand().toLowerCase();
+		switch (command) {
+			case 'wake':
+				this.handleWake(interaction);
+				break;
+			case 'reload':
+				this.reload();
+				interaction.reply({ content: 'Done', ephemeral: true} );
+				break;
+			default:
+				interaction.reply({ content: 'Error processing command',  ephemeral: true });
+		}
+		return true;
+	}
+
 
 	handleCommand(interaction) {
 		if (interaction.guild.id !== this.config.ids.guild) { return false; }
 
 		let command = interaction.commandName;
-		if (command==='master') {
-			if (interaction.member.user.id != this.config.ids.discord) {
-				interaction.reply({ content: 'Error processing command',  ephemeral: true });
+		switch(command) {
+			case 'slave':
+				return this.handleCommandSlave(interaction);
+				break;
+			case 'master':
+				return this.handleCommandMaster(interaction);
 				return true;
-			}
-			
-			command = interaction.options.getSubcommand().toLowerCase();
-			switch (command) {
-				case 'wake':
-					this.handleWake(interaction);
-					break;
-				case 'reload':
-					this.reload();
-					interaction.reply({ content: 'Done', ephemeral: true} );
-					break;
-				default:
-					interaction.reply({ content: 'Error processing command',  ephemeral: true });
-			}
-			return true;
-		} else { 
-			return false; 
+			default:
+				return false;
 		}
 
 	}
