@@ -80,31 +80,40 @@ class TaskInstance {
 		this.master.messagePrivate('Warning: New task: ' + this.taskStr);
 	}
 
-	handleReply(i) {
-		if (i.customId == CANCEL_BUTTON_ID) {
-			if (i.member.roles.cache.has(this.master.config.ids.masterrole)) {
-				i.reply({content: 'Action was cancelled by ' + i.member.displayName})
-			} else {
-				i.reply({content: '<@&'+this.master.config.ids.masterrole+'>! Action was cancelled by ' + i.member.displayName})
-			}
-			this.disableAllButtons(i.message);
-		} 
-		else if (i.customId in this.task.replies) {
-			let r = this.task.replies[i.customId];
-			this.master.applyStatus(r.status);
-
-			if (r.reply) {
-				i.reply({content: r.reply})
-			} else if (r.tasks) {
-				const task = this.master.tasklists.getTask(r.tasks, this.master.slave.state);
-				const taskInstance = new TaskInstance(task, this.master);
-				taskInstance.replyInteraction(i, "You chose: " + i.customId, 'Here is a solution for you!');
-			} else {
-				i.deferUpdate();
-			}
-			this.disableAllButtons(i.message);
+	handleReplyCancel(interaction) {
+		if (interaction.member.roles.cache.has(this.master.config.ids.masterrole)) {
+			interaction.reply({content: 'Action was cancelled by ' + interaction.member.displayName})
 		} else {
-			i.reply({content: 'Illegal action', ephemeral: true});
+			interaction.reply({content: '<@&'+this.master.config.ids.masterrole+'>! Action was cancelled by ' + interaction.member.displayName})
+		}
+		this.disableAllButtons(interaction.message);
+	}
+
+	handleReplyButton(interaction) {
+		let reply = this.task.replies[interaction.customId];
+		this.master.applyStatus(reply.status);
+		
+		if (reply.hasReply) {
+			interaction.reply({content: reply.reply})
+		} else {
+			const task = reply.getTask(master);
+			if (task) {
+				const taskInstance = new TaskInstance(task, this.master);
+				taskInstance.replyInteraction(interaction, "You chose: " + interaction.customId, 'Here is a solution for you!');
+			}
+		}
+		this.disableAllButtons(interaction.message);
+	}
+
+	handleReply(interaction) {
+		if (interaction.customId == CANCEL_BUTTON_ID) {
+			this.handleReplyCancel(interaction);
+		} 
+		else if (interaction.customId in this.task.replies) {
+			this.handleReplyButton(interaction);
+		} 
+		else {
+			interaction.reply({content: 'Illegal action', ephemeral: true});
 		}
 	}
 
@@ -133,14 +142,16 @@ class TaskInstance {
 				if (this.task.timeout) {
 					console.log("Reply timeout.");
 					this.master.applyStatus(this.task.timeout.status);
-					if (this.task.timeout.tasks) {
-						const task = this.master.tasklists.getTask(this.task.timeout.tasks, this.master.slave.state);
+					if (this.task.timeout.hasReply) {
+						message.channel.send(this.task.timeout.reply)
+					} else if (this.task.timeout.hasTasks) {
+						const task = this.task.timeout.getTask(this.master);
 						const taskInstance = new TaskInstance(task, this.master);
 						taskInstance.sendTask(message.channel, "You are too late!", "Here is what will happen.");
 						this.master.messagePrivate('New Task!');
 					}
 				} else {
-	 				console.log(`No interactions were collected.`);
+	 				console.log(`Error processing reply` + err);
 				}
 			});
 	}

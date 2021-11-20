@@ -89,8 +89,10 @@ class TanguBot {
 	loadChatMasters(dir) {
 		const slaves = fs.readdirSync(dir+'/', { withFileTypes: true }).filter(d => d.isDirectory()).map(d => d.name);
 
-		for (const slave of slaves ) 
+		for (const slave of slaves ) {
+			if (slave == 'empty_slave') continue;
 			this.commandHandlers.push(new ChatMaster(this, path.resolve(dir, slave)));
+		}
 	}
 
 	loadCommands(dir) {

@@ -52,14 +52,14 @@ class Task {
   			this.parseReplies(task.replies); 
 		}
 		if (task.timeout) {
-			this.timeout = task.timeout;
+			this.timeout = new TaskResponse(task.timeout);
 		}
 	}
 
 	parseReplies(replies) {
 		this.replies = {};
 		for (let reply in replies) {
-			this.replies[reply] = replies[reply];
+			this.replies[reply] = new TaskResponse(replies[reply]);
 		}
 	}
 
@@ -85,10 +85,12 @@ class TaskChance {
 	getChance(state) {
 		if (!this.chance) {
 			for (var eq in this.chances) {
-				var e = parse(eq);
-				if (eval (e, state)) {
-					return this.chances[eq];
-				}
+				try {
+					var e = parse(eq);
+					if (eval (e, state)) {
+						return this.chances[eq];
+					}
+				} catch (e) {}
 			}
 			return 0;
 		} else {
@@ -97,6 +99,39 @@ class TaskChance {
 	}
 }
 
-module.exports = TaskChance;
+class TaskResponse {
+	constructor (response) {
+		this.status = {};
+		this.hasTasks = false;
+		this.hasReply = false;
+		if (response.status) 
+			this.status = response.status;
+		if (response.reply) {
+			this.reply = response.reply;
+			this.hasReply = true;
+		}
+		if (response.tasklist) {
+			this.tasklistname = response.tasklist;
+			this.hasTasks = true;
+		}
+		if (response.tasks) {
+			this.tasklist = new TaskList('response', response.tasks); 
+			this.hasTasks = true;
+		}
+		if (response.time) {
+			this.time = response.time;
+		}
+	}
+
+	getTask(master) {
+		if (this.tasklist) {
+			return this.tasklist.getTask(master.slave.state);
+		} else if (this.tasklistname) {
+			return this.master.tasklists.getTask(this.tasklistname, master.slave.state); 
+		} else {
+			return undefined;
+		}
+	}
+}
 
 module.exports = { TaskList, Task, TaskChance };

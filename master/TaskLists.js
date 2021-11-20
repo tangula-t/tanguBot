@@ -5,15 +5,20 @@ const { TaskList, Task } = require('./Tasks.js');
 class TaskLists {
 	constructor(slavePath) {
 		this.slavePath = slavePath;
-//		this.reload();
+		this.taskPath = path.resolve(this.slavePath, 'tasks');
 	}
 
 	async reload() {
-		let data = fs.readFileSync(path.resolve(this.slavePath, 'tasks.json'));
-		const jsonTasks = JSON.parse(data);
+		const taskFiles = fs.readdirSync(this.taskPath+'/').filter(files => files.endsWith(".js"));
 		this.tasklists = {};
-		for (let list in jsonTasks) {
-			this.tasklists[list] = new TaskList(list, jsonTasks[list]);
+		for (const file of taskFiles) {
+			let data = fs.readFileSync(path.resolve(this.taskPath, file));
+			const jsonTasks = JSON.parse(data);
+			for (let list in jsonTasks) {
+				if (list in this.tasklists)
+					console.log('WARNING: Overwriting duplicate tasklist: ' + list)
+				this.tasklists[list] = new TaskList(list, jsonTasks[list]);
+			}
 		}
 	}
 

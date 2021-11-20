@@ -19,10 +19,6 @@ class ChatMaster extends CommandHandler {
 		this.config = {};
 		this.discord = {};
 		this.config = this.loadFile(configJSON);
-		if (this.config.name == 'EXAMPLE') { 
-			this.guilds = [0];
-			return;
-		}
 		
 		this.permissions = this.loadFile('permissions.json');
 		this.tasklists = new TaskLists(this.slavePath);
@@ -130,7 +126,7 @@ class ChatMaster extends CommandHandler {
 		}
 
 	}
-	
+
 	handleMasterStatus(interaction) {
 		const {options} = interaction;
 
@@ -183,7 +179,7 @@ class ChatMaster extends CommandHandler {
 		commands.push(
 			new SlashCommandBuilder()
 			.setName ('slave')
-			.setDescription('Masters commands for the slave')
+			.setDescription('Slaves commands')
 			.addSubcommand(subcommand => subcommand
 				.setName('wake')
 				.setDescription('Involuntary wake up'))
@@ -240,8 +236,6 @@ class ChatMaster extends CommandHandler {
 	}
 
 	async afterRegisterCommands() {
-		if (this.config.name == 'EXAMPLE') return; 
-
 		const guild = await this.bot.discord.guilds.fetch(this.config.ids.guild);
 		const commands = await guild.commands.fetch();
 
@@ -285,13 +279,16 @@ class ChatMaster extends CommandHandler {
 	}
 	
 	handleCommandMaster(interaction) {
-		let commandgroup = interaction.options.getSubcommandGroup().toLowerCase();
-		switch (commandgroup) {
-			case 'status': 
-				this.handleMasterStatus(interaction);
-				return true;
-				break;
-		}
+		let commandgroup = interaction.options.getSubcommandGroup(false)
+		if (commandgroup) {
+			commandgroup = commandgroup.toLowerCase();
+			switch (commandgroup) {
+				case 'status': 
+					this.handleMasterStatus(interaction);
+					return true;
+					break;
+			}
+		}	
 		let command = interaction.options.getSubcommand().toLowerCase();
 		switch (command) {
 			case 'givetask':
