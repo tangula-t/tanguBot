@@ -14,17 +14,12 @@ class TaskList {
 		}
 	}
 
-	getChances(state) {
-		for (let task of this.tasks) {
-			const chance = task.getChance(state);
-		}
-	}
-
 	calculateChances(state) {
 		let result = [];
 		let total = 0;
 		for (let i = 0; i<this.tasks.length; i++) {
 			result[i] = this.tasks[i].getChance(state);
+			//console.log(result[i] + ': ' + this.tasks[i].rawTask);
 			total = total + result[i];
 		}
 		for (let i = 0; i<result.length; i++) {
@@ -37,6 +32,19 @@ class TaskList {
 		let chances = this.calculateChances(state);
 		let taskId = orderUtil.randomWeighted(chances);
 		return this.tasks[taskId];
+	}
+
+	getOverview(state) {
+		let result = '```';
+		let chances = this.calculateChances(state);
+		for (let i=0; i<this.tasks.length; i++) {
+			let c = 0;
+			if (chances[i]>0) {
+				c = chances[i]*100;
+			}
+			result = result + ((c<10)?'0':'') + c.toFixed(1) + '%  ' + this.tasks[i].rawTask + "\n";
+		}
+		return result + "```";
 	}
 }
 
@@ -90,7 +98,7 @@ class TaskChance {
 					if (eval (e, state)) {
 						return this.chances[eq];
 					}
-				} catch (e) {}
+				} catch (e) { console.log(e); }
 			}
 			return 0;
 		} else {

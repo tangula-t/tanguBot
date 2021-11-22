@@ -9,7 +9,7 @@ class TaskLists {
 	}
 
 	async reload() {
-		const taskFiles = fs.readdirSync(this.taskPath+'/').filter(files => files.endsWith(".js"));
+		const taskFiles = fs.readdirSync(this.taskPath+'/').filter(files => files.endsWith(".json"));
 		this.tasklists = {};
 		for (const file of taskFiles) {
 			let data = fs.readFileSync(path.resolve(this.taskPath, file));
@@ -29,6 +29,13 @@ class TaskLists {
 		return this.tasklists[list].getTask(state);
 	}
 
+	getOverview(list, state) {
+		if (!(list in this.tasklists)) { 
+			return "No such list: " + list;
+		}
+		return this.tasklists[list].getOverview(state);
+		
+	}
 }
 
 module.exports = TaskLists;

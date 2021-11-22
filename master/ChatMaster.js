@@ -6,6 +6,7 @@ const cron = require('node-cron');
 const orderUtil = require('./orders.js');
 const TaskLists = require('./TaskLists.js');
 const TaskInstance = require('./TaskInstance.js');
+const { SlaveStatus, Status } = require('./Status.js');
 const { CommandHandler } = require(path.resolve(__dirname, '..', 'CommandHandler.js'));
 
 const slaveJSON = 'slave.json';
@@ -19,7 +20,7 @@ class ChatMaster extends CommandHandler {
 		this.config = {};
 		this.discord = {};
 		this.config = this.loadFile(configJSON);
-		
+		this.status = new SlaveStatus(this.slavePath);
 		this.permissions = this.loadFile('permissions.json');
 		this.tasklists = new TaskLists(this.slavePath);
 
@@ -27,14 +28,12 @@ class ChatMaster extends CommandHandler {
 
 		this.reload()
 			.then(()=>{
-		//		this.messagePrivate('Bot has started');
 				console.log('master loaded for ' + this.config.name);
 			});
 	}
 
 	async reload() {
 		await this.reloadSlave()
-			.then(()=>{this.reloadLocations()})
 			.then(()=>{this.tasklists.reload()})
 			.then(()=>{console.log("Reloaded: " + this.config.name)});
 	}
@@ -42,7 +41,6 @@ class ChatMaster extends CommandHandler {
 	loadFile(file) {
 		let data = fs.readFileSync(path.resolve(this.slavePath, file));
 		return JSON.parse(data);
-
 	}
 
 	async reloadSlave() {
@@ -57,6 +55,8 @@ class ChatMaster extends CommandHandler {
 		if (!this.discord.user) {
 			console.log('ERROR: User not found: ' + this.config.ids.discord);
 		}
+
+		this.status.activeStatus = this.slave.status;
 	}
 
 	async saveSlave() {
@@ -64,7 +64,7 @@ class ChatMaster extends CommandHandler {
 		fs.writeFileSync(path.resolve(this.slavePath, slaveJSON), data);
 	}
 
-	applyStatus(stateChange) {
+	applyState(stateChange) {
 		if (!stateChange) { return; }
 
 		for (let state in stateChange) {
@@ -87,15 +87,50 @@ class ChatMaster extends CommandHandler {
 		this.saveSlave();
 	}
 
-	async reloadLocations() {
-		// Load master locations
-		let data = fs.readFileSync(path.resolve(this.slavePath, 'locations.json'));
-		this.locations = JSON.parse(data);
-	
-		if (!this.slave.location) { 
-			this.slave.location = 'unknown'; 
-			console.log('Warning: Slave location: Unknown');
+	setState(newState) {
+		if (!newState) { return; }
+
+		for (let state in newState) 
+			this.slave.state[state] = newState[state];
+		this.saveSlave();
+	}
+
+	handleSlaveSetStatus(interaction) {
+		const {options} = interaction;
+		let newStatus = options.get('status').value;
+
+		if (this.status.setStatus(this, newStatus)) {
+			interaction.reply({content: 'new status: ' + this.status.getStatus().description, ephemeral: true});
+		} else {
+			interaction.reply({content: 'unknown status: ' + newStatus, ephemeral: true});
+			return;
 		}
+
+		this.slave.status = newStatus;
+		this.saveSlave();
+	}
+
+	handleSlaveStatus(interaction) {
+		const {options} = interaction;
+
+		let command = interaction.options.getSubcommand().toLowerCase();
+
+		switch(command) {
+			case 'set': 
+				this.handleSlaveSetStatus(interaction);
+				break;
+			case 'task':
+				let s = this.status.getStatus()
+				if (s.hasTask) {
+					const task = s.getTask(this);
+					const taskInstance = new TaskInstance(task, this);
+					taskInstance.replyInteraction(interaction, 'You asked for a task', 'Your current status is: ' + this.slave.status);
+				} else {
+					interaction.reply({ content: 'There are no tasks associated with your status: ' + this.slave.status, ephemeral: true});
+				}
+				break;
+		}
+
 	}
 
 	getPermissionsStringOption(option) {
@@ -115,7 +150,7 @@ class ChatMaster extends CommandHandler {
 		if (permissionFor in this.permissions) {
 			let permission = this.permissions[permissionFor];
 			if (permission.status) {
-				this.applyStatus(permission.status);
+				this.applyState(permission.status);
 			}
 			const task = this.tasklists.getTask(permission.tasks, this.slave.state);
 			const taskInstance = new TaskInstance(task, this);
@@ -127,7 +162,7 @@ class ChatMaster extends CommandHandler {
 
 	}
 
-	handleMasterStatus(interaction) {
+	handleMasterState(interaction) {
 		const {options} = interaction;
 
 		let command = interaction.options.getSubcommand().toLowerCase();
@@ -135,8 +170,8 @@ class ChatMaster extends CommandHandler {
 		switch(command) {
 			case 'get': 
 				let r = new Discord.MessageEmbed()
-					.setTitle(this.config.name + ' status.')
-					.setDescription('All status fields listed below' );
+					.setTitle(this.config.name + ' state.')
+					.setDescription('All state fields listed below' );
 
 				for (let s in this.slave.state) {
 					r.addField(s, '' + this.slave.state[s]);
@@ -163,11 +198,20 @@ class ChatMaster extends CommandHandler {
 						} else {
 							this.slave.state[id] = newNumber;
 						}
+					} else if (typeof old == 'boolean') {
+						if (value == 'true' || value == '1') {
+							this.slave.state[id] = true
+						} else if (value == 'false' || value == '0') {
+							this.slave.state[id] = false
+						} else {
+							interaction.reply({content: 'Cannot parse "'+value+'" to boolean. (true or false)', emphemeral: true});
+							return;
+						}
 					} else {
-							this.slave.state[id] = parseInt(value);
+							this.slave.state[id] = value;
 					}
 					this.saveSlave();
-					interaction.reply({content: '' + id + ' set to ' + value, ephemeral: true});
+					interaction.reply({content: '' + id + ' set to ' + this.slave.state[id], ephemeral: true});
 				} else {
 					interaction.reply({content: 'Unknown state ID: ' + id, emphemeral: true});
 				}
@@ -191,6 +235,22 @@ class ChatMaster extends CommandHandler {
 				.setDescription('Ask permission for something')
 				.addStringOption(option => this.getPermissionsStringOption(option))
 			)
+			.addSubcommandGroup(subcommand => subcommand
+				.setName('status')
+				.setDescription('manipulate state')
+				.addSubcommand(subcommand => subcommand
+					.setName('set')
+					.setDescription('Set your status')
+					.addStringOption(option => this.status.getStatusStringOption(option))
+				)
+				.addSubcommand(subcommand => subcommand
+					.setName('task')
+					.setDescription('Request a task based on your status' )	
+				)
+			)
+			.addSubcommand(subcommand => subcommand
+				.setName('camjoin')
+				.setDescription('Someone joined'))
 			.setDefaultPermission(false)
 			.toJSON()
 		);
@@ -203,25 +263,31 @@ class ChatMaster extends CommandHandler {
 				.setName('reload')
 				.setDescription('Reload (slave) configuration'))
 			.addSubcommandGroup(subcommand => subcommand
-				.setName('status')
-				.setDescription('manipulate status')
+				.setName('state')
+				.setDescription('manipulate state')
 				.addSubcommand(subcommand => subcommand
 					.setName('get')
-					.setDescription('get status'))
+					.setDescription('get state')
+				)
 				.addSubcommand(subcommand => subcommand
 					.setName('set')
-					.setDescription('set status')
+					.setDescription('set state')
 					.addStringOption(option => option
 						.setName('id')
 						.setDescription('What setting to change')
 						.setRequired(true))
 					.addStringOption(option => option
 						.setName('value')
-						.setDescription('New value for this setting')
+						.setDescription('New value for this state')
 						.setRequired(true))
 				)
-
-
+			)
+			.addSubcommand(subcommand => subcommand
+				.setName('listtasks')
+				.setDescription('Show all tasks for a tasklist, with their current calculated chance')
+				.addStringOption(option => option.setName('tasklist')
+							.setRequired(true)
+							.setDescription('name of the tasklist to select a task from'))
 			)
 			.addSubcommand(subcommand => subcommand
 				.setName('givetask')
@@ -260,10 +326,23 @@ class ChatMaster extends CommandHandler {
 	}
 
 	handleCommandSlave(interaction) {
+		let commandgroup = interaction.options.getSubcommandGroup(false)
+		if (commandgroup) {
+			commandgroup = commandgroup.toLowerCase();
+			switch (commandgroup) {
+				case 'status': 
+					this.handleSlaveStatus(interaction);
+					return true;
+					break;
+			}
+		}	
 		let command = interaction.options.getSubcommand().toLowerCase();
 		switch (command) {
 			case 'wake':
 				this.handleWake(interaction);
+				break;
+			case 'camjoin':
+				this.handleCamJoin(interaction);
 				break;
 			case 'permission':
 				this.handlePermission(interaction);
@@ -283,14 +362,17 @@ class ChatMaster extends CommandHandler {
 		if (commandgroup) {
 			commandgroup = commandgroup.toLowerCase();
 			switch (commandgroup) {
-				case 'status': 
-					this.handleMasterStatus(interaction);
+				case 'state': 
+					this.handleMasterState(interaction);
 					return true;
 					break;
 			}
 		}	
 		let command = interaction.options.getSubcommand().toLowerCase();
 		switch (command) {
+			case 'listtasks':
+				this.handleMasterListTasks(interaction);
+				break;
 			case 'givetask':
 				this.handleMasterGiveTask(interaction);
 				break;
@@ -327,6 +409,13 @@ class ChatMaster extends CommandHandler {
 		const taskInstance = new TaskInstance(punishment, this);
 		taskInstance.replyInteraction(interaction, 'You woke up?', 'Here is what you will do:');
 	}
+	
+	handleCamJoin(interaction) {
+		const punishment = this.tasklists.getTask('oncam', this.slave.state);
+		const taskInstance = new TaskInstance(punishment, this);
+		interaction.reply({content: 'ok', ephemeral: true});
+		taskInstance.sendTask(this.discord.channel, 'Someone joined', 'This is the task that was picked');
+	}
 
 	handleMasterGiveTask(interaction) {
 		const {options} = interaction;
@@ -336,7 +425,16 @@ class ChatMaster extends CommandHandler {
 		taskInstance.replyInteraction(interaction, interaction.member.displayName + ' requested a task for ' + this.config.name, ' ');
 		this.messagePrivate('New task from ' + interaction.member.displayName +'!');
 	}
-
+	
+	handleMasterListTasks(interaction) {
+		const {options} = interaction;
+		let taskList = options.get('tasklist').value;
+		const overview = this.tasklists.getOverview(taskList, this.slave.state);
+		const embed = new Discord.MessageEmbed()	
+				.setTitle('Tasks in list: ' + taskList)
+				.setDescription('' + overview);
+		interaction.reply({content: ' ', embeds: [embed], ephemeral: true});
+	}
 
 	messagePrivate(msg) {
 		if (this.discord.user) {

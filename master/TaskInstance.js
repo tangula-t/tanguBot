@@ -91,7 +91,7 @@ class TaskInstance {
 
 	handleReplyButton(interaction) {
 		let reply = this.task.replies[interaction.customId];
-		this.master.applyStatus(reply.status);
+		this.master.applyState(reply.status);
 		
 		if (reply.hasReply) {
 			interaction.reply({content: reply.reply})
@@ -141,7 +141,7 @@ class TaskInstance {
 				this.disableAllButtons(message);
 				if (this.task.timeout) {
 					console.log("Reply timeout.");
-					this.master.applyStatus(this.task.timeout.status);
+					this.master.applyState(this.task.timeout.status);
 					if (this.task.timeout.hasReply) {
 						message.channel.send(this.task.timeout.reply)
 					} else if (this.task.timeout.hasTasks) {
