@@ -91,11 +91,16 @@ class TaskChance {
 	}
 
 	getChance(state) {
+		let evalState = state;
+		let date = new Date();
+		evalState.timeday = date.getDay();
+		evalState.timehour = date.getHours();
+		evalState.timeminutes = date.getMinutes();
 		if (!this.chance) {
 			for (var eq in this.chances) {
 				try {
 					var e = parse(eq);
-					if (eval (e, state)) {
+					if (eval (e, evalState)) {
 						return this.chances[eq];
 					}
 				} catch (e) { console.log(e); }
