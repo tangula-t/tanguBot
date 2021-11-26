@@ -8,6 +8,7 @@ const TaskLists = require('./TaskLists.js');
 const TaskInstance = require('./TaskInstance.js');
 const { SlaveStatus, Status } = require('./Status.js');
 const { CommandHandler } = require(path.resolve(__dirname, '..', 'CommandHandler.js'));
+const { MultiPageEmbed } = require('./MultiPageEmbed.js');
 
 const slaveJSON = 'slave.json';
 const configJSON = 'config.json';
@@ -29,7 +30,8 @@ class ChatMaster extends CommandHandler {
 		this.reload()
 			.then(()=>{
 				console.log('master loaded for ' + this.config.name);
-			});
+			})
+			.catch(()=>{ console.log('Could not load' + this.config.name)});
 	}
 
 	async reload() {
@@ -50,7 +52,7 @@ class ChatMaster extends CommandHandler {
 		if (!this.discord.channel) {
 			console.log('ERROR: Channel not found: ' + this.config.ids.discordchannel);
 		}
-	
+
 		this.discord.user = await this.bot.discord.users.fetch(this.config.ids.discord, []); 
 		if (!this.discord.user) {
 			console.log('ERROR: User not found: ' + this.config.ids.discord);
@@ -168,16 +170,16 @@ class ChatMaster extends CommandHandler {
 		let command = interaction.options.getSubcommand().toLowerCase();
 
 		switch(command) {
-			case 'get': 
-				let r = new Discord.MessageEmbed()
-					.setTitle(this.config.name + ' state.')
-					.setDescription('All state fields listed below' );
-
-				for (let s in this.slave.state) {
-					r.addField(s, '' + this.slave.state[s]);
-
-				}
-				interaction.reply({ content: ' ', embeds: [r], ephemeral: true});
+			case 'get':
+				let multiPageEmbed = new MultiPageEmbed({
+					title: this.config.name + ' state.',
+					description: 'All state fields for the user are listed below',
+					ephemeral: true,
+					sort: true,
+					author: interaction.member.displayName},
+					this.slave.state,
+					interaction.user.id);
+				multiPageEmbed.interactionReply(interaction);
 				break;
 			case 'set': 
 				const id = options.get('id').value;
@@ -377,8 +379,12 @@ class ChatMaster extends CommandHandler {
 				this.handleMasterGiveTask(interaction);
 				break;
 			case 'reload':
-				this.reload();
-				interaction.reply({ content: 'Done', ephemeral: true} );
+					this.reload()
+						.then(() => interaction.reply({ content: 'Done', ephemeral: true} ))
+						.catch(() => {
+							interaction.reply({ content: 'Reload failed!', ephemeral: true} );
+							this.messagePrivate('RELOAD FAILED');
+						});
 				break;
 			default:
 				interaction.reply({ content: 'Error processing command',  ephemeral: true });

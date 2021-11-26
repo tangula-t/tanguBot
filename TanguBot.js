@@ -80,8 +80,8 @@ class TanguBot {
 
 	initTelegram() {
 		this.telegram = new Telegraf(this.config.telegram.token);
-		this.telegram.command('start', ctx => {
-			console.log(ctx);
+		this.telegram.command('getid', ctx => {
+			ctx.reply('Your id is: ' + ctx.update.message.from.id);
 		});
 		this.telegram.launch();
 	}
