@@ -1,0 +1,15 @@
+{
+	"home": {
+		"description": "At home",
+		"forcestate": {
+			"test": 1
+		},
+		"ignoreStateAfter": ["bed"]
+	},
+	"work": {
+		"description": "At work"
+	},
+	"bed": { 
+		"description": "Sleeping"
+	}
+}
