@@ -72,7 +72,7 @@ class CommandCreateSlave extends CommandHandler {
 			telegram = "\n\nYou can get your telegram ID by messaging "+this.config.telegramuser+" on telegram: '/getid'";
 		
 		embed.setDescription(text+"\n\nconfig.json:\n```json\n" + data + "```" + telegram);
-                interaction.reply({content: ' ', embeds: [embed]})
+                interaction.reply({content: ' ', embeds: [embed], ephemeral: true})
 
 		return true;
 	}
