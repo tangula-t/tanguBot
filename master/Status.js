@@ -26,15 +26,8 @@ class SlaveStatus {
 		return this.statuses.some(s => s == status);
 	}
 
-	getStatusStringOption(option) {
-		option.setName('status')
-			.setDescription('What should your new status be?')
-			.setRequired(true);
-			
-		for (let s in this.statuses)
-			option.addChoice(s, s);
-		
-		return option;
+	getValidStatusString() {
+		return Object.keys(this.statuses).sort().join(', ');
 	}
 
 	setStatus(master, newStatus) {

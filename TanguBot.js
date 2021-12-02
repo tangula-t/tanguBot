@@ -5,13 +5,14 @@ const { Telegraf } = require('telegraf');
 const path = require('path');
 const fs = require('fs');
 
-const ChatMaster = require('./master/ChatMaster.js');
+const MasterFactory = require('./master/MasterFactory.js');
 
 class TanguBot {
 	constructor() {
 		this.dirname = __dirname;
 		this.commands = new Collection();
 		this.commandHandlers = [];
+		this.masterFactory = new MasterFactory(this);
 
 		this.initConfig();
 		this.initDiscord();
@@ -46,7 +47,8 @@ class TanguBot {
 		console.log('Logged in as ' + this.discord.user.tag);
 		this.discord.user.setActivity('with my subs', { type: 'PLAYING' })
 		this.loadCommands('commands');
-		this.loadChatMasters('slaves');
+		this.masterFactory.loadSlaves('slaves');
+		this.masterFactory.masters.forEach(master => this.commandHandlers.push(master));
 		this.registerCommands();
 	}
 
@@ -86,14 +88,6 @@ class TanguBot {
 		this.telegram.launch();
 	}
 
-	loadChatMasters(dir) {
-		const slaves = fs.readdirSync(dir+'/', { withFileTypes: true }).filter(d => d.isDirectory()).map(d => d.name);
-
-		for (const slave of slaves ) {
-			if (slave == 'empty_slave') continue;
-			this.commandHandlers.push(new ChatMaster(this, path.resolve(dir, slave)));
-		}
-	}
 
 	loadCommands(dir) {
 		const commandFiles = fs.readdirSync(dir+'/').filter(files => files.endsWith(".js"));
