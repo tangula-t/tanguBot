@@ -19,8 +19,8 @@ description: >- # this means to ignore newlines until "baseurl:"
   Tangubot is a discord bot to facilitate a master/slave relationship. Once configured
   there will be a lot of tasks the slave can get from the bot, based on their state. 
   The master can check in, and optionally manually issue orders as well.
-baseurl: "" # the subpath of your site, e.g. /blog
-url: "" # the base hostname & protocol for your site, e.g. http://example.com
+baseurl: "/tanguBot" # the subpath of your site, e.g. /blog
+url: "https://tangula-t.github.io" # the base hostname & protocol for your site, e.g. http://example.com
   #twitter_username: jekyllrb
 github_username:  tangula-t
 
