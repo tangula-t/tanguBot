@@ -78,6 +78,10 @@ class Task {
 	taskStr() {
 		return orderUtil.parseOrder(this.rawTask);
 	}
+
+	isEmpty() {
+		return this.rawTask == '';
+	}
 }
 
 class TaskChance {
@@ -140,7 +144,7 @@ class TaskResponse {
 		if (this.tasklist) {
 			return this.tasklist.getTask(master.slave.state);
 		} else if (this.tasklistname) {
-			return this.master.tasklists.getTask(this.tasklistname, master.slave.state); 
+			return master.tasklists.getTask(this.tasklistname, master.slave.state); 
 		} else {
 			return undefined;
 		}

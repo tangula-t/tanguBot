@@ -326,9 +326,13 @@ class Slave {
 		const {options} = interaction;
 		let taskList = options.get('tasklist').value;
 		const task = this.tasklists.getTask(taskList, this.slave.state);
-		const taskInstance = new TaskInstance(task, this);
-		taskInstance.replyInteraction(interaction, interaction.member.displayName + ' requested a task for ' + this.config.name, ' ');
-		this.messagePrivate('New task from ' + interaction.member.displayName +'!');
+		if (task.isEmpty()) {
+			interaction.reply({content: 'An empty task was returned. Skipping notification.', emphemeral: true});
+		} else {
+			const taskInstance = new TaskInstance(task, this);
+			taskInstance.replyInteraction(interaction, interaction.member.displayName + ' requested a task for ' + this.config.name, ' ');
+			this.messagePrivate('New task from ' + interaction.member.displayName +'!');
+		}
 	}
 	
 	handleMasterCommandListTasks(interaction) {

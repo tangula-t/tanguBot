@@ -16,14 +16,19 @@ class TaskInstance {
 	getTaskEmbed(title, message) {
 		let description = this.task.taskStr();
 		let embedTitle = title?title:this.task.title;
-		let embedMessage = message?message:' ';	
+		let embedMessage = message?message:' ';
 		let embed = new MessageEmbed()
 			.setAuthor(this.master.config.name)
 			.setTitle(embedTitle)
 			.setDescription(embedMessage)
-			.addField('Order', this.taskStr)
 			.setColor(0x900090)
 			.setFooter('status ' + this.master.slave.state.merit);
+		
+		if (this.task.isEmpty()) 
+			embed.addField('Order', this.taskStr);
+		} else {
+			embed.addField('No order', 'No task was given.');
+		}
 		return embed;
 	}
 
@@ -146,9 +151,11 @@ class TaskInstance {
 						message.channel.send(this.task.timeout.reply)
 					} else if (this.task.timeout.hasTasks) {
 						const task = this.task.timeout.getTask(this.master);
-						const taskInstance = new TaskInstance(task, this.master);
-						taskInstance.sendTask(message.channel, "You are too late!", "Here is what will happen.");
-						this.master.messagePrivate('New Task!');
+						if (!task.isEmpty()) {
+							const taskInstance = new TaskInstance(task, this.master);
+							taskInstance.sendTask(message.channel, "You are too late!", "Here is what will happen.");
+							this.master.messagePrivate('New Task!');
+						}
 					}
 				} else {
 	 				console.log(`Error processing reply` + err);
