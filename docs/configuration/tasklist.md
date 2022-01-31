@@ -53,7 +53,8 @@ The simplest task has a [`task`](#task), the text of what to do and a [`chance`]
 ```
 
 ## task
-The `task` string of a tasklist is a single string that represents the task. There are some optional things that will be parsed.
+The `task` string of a tasklist is a single string that represents the task. There are some optional things that will be parsed. 
+If this string is empty, the task will be considered empty; Upon requesting permission/task, a "regular" task reply will be given, with the exception that it states there is no order. Timer, timeout or master-given tasks will not be sent at all.
 
 - `[#]` will be replaced with a random number up to and including `#`  
 *example* `[6]` will be a number between 1 and 6
@@ -66,6 +67,7 @@ The `task` string of a tasklist is a single string that represents the task. The
 
 - `(#%[];#%[])` Sets a percentual chance for `[]`. `[]` wil have been parsed as above.  
 *example* `(40%[6];60%[6:8])` has a 40% chance of a random number up to 6. And a 60% chance of a random number between 6 and 8
+
 
 ## chance
 ### Simple integer chance
