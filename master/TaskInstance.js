@@ -24,7 +24,7 @@ class TaskInstance {
 			.setColor(0x900090)
 			.setFooter('status ' + this.master.slave.state.merit);
 		
-		if (this.task.isEmpty()) 
+		if (this.task.isEmpty())  {
 			embed.addField('Order', this.taskStr);
 		} else {
 			embed.addField('No order', 'No task was given.');
