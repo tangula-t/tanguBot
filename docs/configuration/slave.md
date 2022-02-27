@@ -76,6 +76,10 @@ All the statuses a slave can set are in `statuses.json`
     "description": "Free text for name2",
     "forcestate": {
       "test":2
+    },
+    "timer": {
+      "time": 60,
+      "tasklist": "timertasks"
     }
   },
   "name3": {
@@ -86,7 +90,9 @@ All the statuses a slave can set are in `statuses.json`
 In the example above there are 3 statuses for the slave to set: `name`, `name2` and `name3`.
 - When the slave sets their status to `name`, `aStateVariable` will be initialised to 1, unless the previous state was `name2`.
 - When the slave sets their status to `name2`, `test` will be initialised to 2.
+- When the slave sets their status to `name2`, every 60 seconds a task from tasklist `timertasks` will be chosen
 - When the slave sets their status to `name3`, [/slave status task]({% link commands/slave.md %}#slave-status-task) will execute tasklist `taskList`
+
 
 All settings, except description are optional.
 
