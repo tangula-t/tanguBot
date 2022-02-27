@@ -21,7 +21,7 @@ class Slave {
 		this.config = {};
 		this.discord = {};
 		this.config = this.loadFile(configJSON);
-		this.status = new SlaveStatus(this.slavePath);
+		this.status = new SlaveStatus(this, this.slavePath);
 		this.permissions = this.loadFile('permissions.json');
 		this.tasklists = new TaskLists(this.slavePath);
 
@@ -31,7 +31,7 @@ class Slave {
 			.then(()=>{
 				console.log('Slave instance created: ' + this.config.name);
 			})
-			.catch(()=>{ console.log('Could not load slave' + this.config.name)});
+			.catch((error)=>{ console.log('Could not load slave' + this.config.name + "\n" + error)});
 	}
 
 	async reload() {
@@ -57,8 +57,7 @@ class Slave {
 		if (!this.discord.user) {
 			console.log('ERROR: User not found: ' + this.config.ids.discord);
 		}
-
-		this.status.activeStatus = this.slave.status;
+		this.status.load(this, this.slave.status);
 	}
 
 	async saveSlave() {
@@ -66,6 +65,7 @@ class Slave {
 		fs.writeFileSync(path.resolve(this.slavePath, slaveJSON), data);
 	}
 
+	
 	applyState(stateChange) {
 		if (!stateChange) { return; }
 
