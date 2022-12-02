@@ -18,16 +18,21 @@ class TaskInstance {
 		let embedTitle = title?title:this.task.title;
 		let embedMessage = message?message:' ';
 		let embed = new MessageEmbed()
-			.setAuthor(this.master.config.name)
+			.setAuthor({name: this.master.config.name})
 			.setTitle(embedTitle)
 			.setDescription(embedMessage)
 			.setColor(0x900090)
-			.setFooter('status ' + this.master.slave.state.merit);
+			.setFooter({text: 'status ' + this.master.slave.state.merit});
 		
 		if (!this.task.isEmpty())  {
-			embed.addField('Order', this.taskStr);
+			embed.addFields({
+				name: 'Order', 
+				value: this.taskStr
+			});
 		} else {
-			embed.addField('No order', 'No task was given.');
+			embed.addFields({
+				name: 'No order', 
+				value: 'No task was given.'});
 		}
 		return embed;
 	}

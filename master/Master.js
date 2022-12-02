@@ -120,53 +120,9 @@ class Master extends CommandHandler {
 		commands.push(this.getCommand_Master()); // /master yyy
 	}
 
-	getMasterPermissions() {
-		let result = [];
-		// Fetch master-role IDs from each slave
-		// and allow them to use the /aster command
-		this.slaves.forEach(slave => {
-			if (!(result.some(permission => permission.id == slave.config.ids.masterrole))) {
-				result.push({
-					id: slave.config.ids.masterrole,
-					type: 'ROLE',
-					permission: true
-				})
-			}
-		});
-		return result;
-	}
-
-	getSlavePermissions() {
-		let result = [];
-		// Fetch slave userids from the slaves
-		// and allow them to use the /slave command
-		this.slaves.forEach(slave => {
-			if (!(result.some(permission => permission.id == slave.config.ids.discord))) {
-				result.push({
-					id: slave.config.ids.discord,
-					type: 'USER',
-					permission: true
-				})
-			}
-		});
-		return result;
-	}
-
 	async afterRegisterCommands() {
 		const guild = await this.bot.discord.guilds.fetch(this.guild);
 		const commands = await guild.commands.fetch();
-
-		// Permissions can only be set after registration 
-		// by fetching the commands from the guild
-		commands.forEach(command => {
-			if (command.name == 'master') {
-				let permissions = this.getMasterPermissions();
-				command.permissions.set( { permissions } );
-			} else if (command.name == 'slave') {
-				let permissions = this.getSlavePermissions();
-				command.permissions.set( { permissions } );
-			}
-		});
 	}
 
 	handleCommand(interaction) {

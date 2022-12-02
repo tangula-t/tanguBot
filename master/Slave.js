@@ -341,8 +341,8 @@ class Slave {
 		const overview = this.tasklists.getOverview(taskList, this.slave.state);
 		const embed = new Discord.MessageEmbed()	
 				.setTitle('Tasks in list: ' + taskList)
-				.setFooter('**Slave:** tangula')
-				.setAuthor(interaction.member.displayName)
+				.setFooter({text: '**Slave:** ' +  this.discord.user.displayName})
+				.setAuthor({name: interaction.member.displayName})
 				.setDescription('' + overview);
 		interaction.reply({content: ' ', embeds: [embed], ephemeral: true});
 	}

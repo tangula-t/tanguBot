@@ -69,17 +69,23 @@ class MultiPageEmbed {
 			.setDescription(this.embeddata.description);
 
 		if (this.fieldnames.length>maxFields)
-			embed.setFooter('Showing: ' + this.index + '-' + (this.index+maxFields) + ' of ' + this.fieldnames.length)
+			embed.setFooter({text: 'Showing: ' + this.index + '-' + (this.index+maxFields) + ' of ' + this.fieldnames.length})
 
 		if (this.embeddata.color)
 			embed.setColor(this.embeddata.color)
 		if (this.embeddata.author)
-			embed.setAuthor(this.embeddata.author)
+			embed.setAuthor({name: this.embeddata.author})
 		const current = this.fieldnames.slice(this.index, this.index + maxFields);
+		let fields = [];
+
 		for (let key of current ) {
 			let v = ''+this.fields[key];
-			embed.addField(key, v?v:'*empty*');
+			fields.push({
+				name: key,
+				value: v?v:'*empty*'
+			});
 		}
+		embed.addFields(fields);
 
 		return embed;
 	}
@@ -109,7 +115,6 @@ class MultiPageEmbed {
 	}
 
 	handleReply(i) {
-		console.log(i);
 		if (i.customId == forwardId) this.index += maxFields;
 		if (i.customId == backId) this.index -= maxFields;
 
