@@ -56,10 +56,10 @@ function parseOrder(order) {
 	// [..?] : 50/50 to print this
 	order = order.replace(/\[(\d+)\:(\d+)\]/g, parseDoubleNumber);
 	// [x|y|..|z] x,y,.. or z
-	order = order.replace(/\[([^|]+|[^\]]+)\]/, parseOptions);
+	order = order.replace(/\[([^|]+|[^\]]+)\]/g, parseOptions);
 
 	// (#%[];#%[]) Extra chances: [] have already been removed
-	order = order.replace(/\((\d+%[^;]+;[^\)]+)\)/, parsePercent);
+	order = order.replace(/\((\d+%[^;]+;[^\)]+)\)/g, parsePercent);
 	return order;
 }
 
