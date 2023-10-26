@@ -106,7 +106,7 @@ class TaskInstance {
 		if (reply.hasReply) {
 			interaction.reply({content: reply.reply})
 		} else {
-			const task = reply.getTask(master);
+			const task = reply.getTask(this.master);
 			if (task) {
 				const taskInstance = new TaskInstance(task, this.master);
 				taskInstance.replyInteraction(interaction, "You chose: " + interaction.customId, 'Here is a solution for you!');
