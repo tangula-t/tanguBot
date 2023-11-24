@@ -35,13 +35,23 @@ class Master extends CommandHandler {
 			.addSubcommand(subcommand => subcommand
 				.setName('reload')
 				.setDescription('Reload (slave) configuration'))
-			.addSubcommand(subcommand => subcommand
-				.setName('permission')
-				.setDescription('Ask permission for something')
-				.addStringOption(option => option
-					.setName('for')
-					.setDescription('What do you want permission for?')
-					.setRequired(true)))
+			.addSubcommandGroup(subcommand => subcommand
+				.setName('request')
+				.setDescription('Request something')
+				.addSubcommand(subcommand => subcommand
+					.setName('permission')
+					.setDescription('Request permission for something')
+					.addStringOption(option => option
+						.setName('for')
+						.setDescription('What do you want permission for?')
+						.setRequired(true)))
+				.addSubcommand(subcommand => subcommand
+					.setName('task')
+					.setDescription('Request a task from a category')
+					.addStringOption(option => option
+						.setName('from')
+						.setDescription('Task category')
+						.setRequired(true))))
 			.addSubcommandGroup(subcommand => subcommand
 				.setName('status')
 				.setDescription('manipulate state')

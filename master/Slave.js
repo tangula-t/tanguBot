@@ -66,6 +66,7 @@ class Slave {
 		this.status.load(this, this.slave.status);
 		
 		this.permissions = this.loadFile('permissions.json');
+		this.requests = this.loadFile('requests.json');
 	}
 
 	async saveSlave() {
@@ -148,6 +149,22 @@ class Slave {
 		}
 
 	}
+	
+	handleCommandRequest(interaction) {
+		const {options} = interaction;
+
+		let command = interaction.options.getSubcommand().toLowerCase();
+
+		switch(command) {
+			case 'permission':
+				this.handleCommandPermission(interaction);
+				break;
+			case 'task':
+				this.handleCommandRequestTask(interaction);
+				break;
+		}
+
+	}
 
 	getPermissionsStringOption(option) {
 		for (let permission in this.permissions) {
@@ -183,6 +200,25 @@ class Slave {
 				this.messagePrivate('RELOAD FAILED');
 			});
 	}
+	
+	handleCommandRequestTask(interaction) {
+		const {options} = interaction;
+		let requestFrom = options.get('from').value;
+		if (requestFrom in this.requests) {
+			let request = this.requests[requestFrom];
+			if (request.status) {
+				this.applyState(request.status);
+			}
+			const task = this.tasklists.getTask(request.tasks, this.slave.state);
+			const taskInstance = new TaskInstance(task, this);
+			taskInstance.replyInteraction(interaction, 'You requested a task from: ' + requestFrom, 'Here you go');
+		}
+		else {
+			let validRequests = Object.keys(this.request).sort().join(', ');
+			interaction.reply({ content: 'Unknown request list: ' + requestFrom + "\n\nValid options are: " + validRequests, ephemeral: true});
+		}
+
+	}
 
 	handleCommandSlave(interaction) {
 		let commandgroup = interaction.options.getSubcommandGroup(false)
@@ -191,6 +227,10 @@ class Slave {
 			switch (commandgroup) {
 				case 'status': 
 					this.handleCommandStatus(interaction);
+					return true;
+					break;
+				case 'request': 
+					this.handleCommandRequest(interaction);
 					return true;
 					break;
 			}
@@ -203,9 +243,6 @@ class Slave {
 				break;
 			case 'camjoin':
 				this.handleCommandCamJoin(interaction);
-				break;
-			case 'permission':
-				this.handleCommandPermission(interaction);
 				break;
 			case 'reload':
 				this.handleCommandReload(interaction);
