@@ -22,7 +22,6 @@ class Slave {
 		this.discord = {};
 		this.config = this.loadFile(configJSON);
 		this.status = new SlaveStatus(this, this.slavePath);
-		this.permissions = this.loadFile('permissions.json');
 		this.tasklists = new TaskLists(this.slavePath);
 
 		this.guild = this.config.ids.guild; 
@@ -41,7 +40,14 @@ class Slave {
 	}
 
 	loadFile(file) {
-		let data = fs.readFileSync(path.resolve(this.slavePath, file));
+		var filename = path.resolve(this.slavePath, file);
+		let data = '{}';
+		if (fs.existsSync(filename)) {
+  		  data = fs.readFileSync(filename);
+		} else {
+		  console.log(`Skipping reading of ${filename}. File does not exist`);
+		}
+		  
 		return JSON.parse(data);
 	}
 
@@ -58,6 +64,8 @@ class Slave {
 			console.log('ERROR: User not found: ' + this.config.ids.discord);
 		}
 		this.status.load(this, this.slave.status);
+		
+		this.permissions = this.loadFile('permissions.json');
 	}
 
 	async saveSlave() {
