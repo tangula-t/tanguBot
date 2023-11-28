@@ -316,7 +316,7 @@ class Slave {
 	handleMasterCommandState_Get(interaction) {
 		let multiPageEmbed = new MultiPageEmbed({
 				title: this.config.name + ' state.',
-				description: 'All state fields for '+this.discord.user.displayName+' are listed below',
+				description: 'All state fields for '+this.config.name+' are listed below',
 				ephemeral: true,
 				sort: true,
 				author: interaction.member.displayName},
@@ -361,7 +361,7 @@ class Slave {
 			}
 			
 			this.saveSlave();
-			interaction.reply({content: '' + id + ' set to ' + this.slave.state[id] + ' for ' + this.discord.user.displayName, ephemeral: true});
+			interaction.reply({content: '' + id + ' set to ' + this.slave.state[id] + ' for ' + this.config.name, ephemeral: true});
 		} else {
 			interaction.reply({content: 'Unknown state ID: ' + id, emphemeral: true});
 		}
@@ -386,7 +386,7 @@ class Slave {
 		const overview = this.tasklists.getOverview(taskList, this.slave.state);
 		const embed = new Discord.MessageEmbed()	
 				.setTitle('Tasks in list: ' + taskList)
-				.setFooter({text: '**Slave:** ' +  this.discord.user.displayName})
+				.setFooter({text: '**Slave:** ' +  this.config.name})
 				.setAuthor({name: interaction.member.displayName})
 				.setDescription('' + overview);
 		interaction.reply({content: ' ', embeds: [embed], ephemeral: true});
