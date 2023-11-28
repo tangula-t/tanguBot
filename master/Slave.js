@@ -113,7 +113,10 @@ class Slave {
 		let newStatus = options.get('status').value;
 
 		if (this.status.setStatus(this, newStatus)) {
-			interaction.reply({content: 'new status: ' + this.status.getStatus().description, ephemeral: true});
+			const embed = new Discord.MessageEmbed()
+				.setTitle('New status for: ' + this.config.name)
+				.setDescription('' + this.status.getStatus().description);
+			interaction.reply({content: ' ', embeds: [embed], ephemeral: false});
 		} else {
 			interaction.reply({content: 'unknown status: ' + newStatus + "\n\nValid options are: " + this.status.getValidStatusString(), ephemeral: true});
 			return;
